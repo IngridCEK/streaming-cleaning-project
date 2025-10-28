@@ -1,0 +1,11 @@
+metric,value
+raw_count,40065
+clean_count,36111
+curated_count,36111
+dropped_noninserted,3954
+raw_non_numeric,3831
+clean_non_null,32669
+imputed_ts,1867
+imputed_val,3442
+fixed_or_valid_est,-3565
+run_ts,2025-10-27T21:30:23
