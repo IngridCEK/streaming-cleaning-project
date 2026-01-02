@@ -6,9 +6,6 @@ Genera mensajes con errores intencionales hacia tres tópicos de Kafka:
   - dirty_events
   - dirty_metadata
   - dirty_reference
-
-Ejemplo de uso (con Kafka arriba):
-    python producer/dirty_producer.py --bootstrap localhost:9092 --rate 5
 '''
 import json, random, time, uuid
 from datetime import datetime
@@ -31,7 +28,7 @@ def ts_mixed(dt: datetime) -> str:
         dt.isoformat(),
         dt.strftime("%Y/%m/%d %H:%M:%S"),
         dt.strftime("%d-%m-%Y %H:%M:%S"),
-        str(int(dt.timestamp() * 1000)),   # epoch ms
+        str(int(dt.timestamp() * 1000)),  
     ]
     return random.choice(choices)
 
@@ -47,7 +44,7 @@ def maybe_corrupt_value(v):
     return v
 
 def build_event(entity_id: str, duplicate=False):
-    now = datetime.utcnow()
+    now = datetime.now()
     event_id = str(uuid.uuid4()) if not duplicate else entity_id + "-dup"
     value = round(random.uniform(0, 100), 2)
     payload = {

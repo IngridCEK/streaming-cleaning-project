@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+project2/
+Include/
+Lib/
+Scripts/
+share/
+pyvenv.cfg
+
+# OS
+.DS_Store

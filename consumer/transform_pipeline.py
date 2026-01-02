@@ -1,8 +1,8 @@
-
 """
-Optimized Transform & Features Pipeline
----------------------------------------
-Versión que evita desbordar memoria en merges grandes.
+Transform & Feature Engineering Pipeline
+
+Builds curated event-level features by safely merging
+cleaned events with metadata and reference baselines.
 """
 
 from pymongo import MongoClient
@@ -34,7 +34,13 @@ merged = (
           .merge(ref, on="entity_id", how="left", validate="many_to_one")
 )
 
-print(" Merge completado sin explosión de memoria.")
+print(" Merge completado.")
+
+
+merged["timestamp"] = pd.to_datetime(
+    merged["timestamp_iso"], errors="coerce"
+)
+# ---------------------------------
 
 # Calcular métricas
 merged["value_delta"] = merged["value"] - merged["baseline_mean"]
@@ -42,7 +48,7 @@ merged["z_score"] = (merged["value"] - merged["baseline_mean"]) / merged["baseli
 merged["is_outlier"] = merged["z_score"].abs() >= 3
 
 # Rolling features
-merged = merged.sort_values(["entity_id", "timestamp_iso"])
+merged = merged.sort_values(["entity_id", "timestamp"])
 merged["rolling_mean_5"] = merged.groupby("entity_id")["value"].transform(lambda x: x.rolling(5, min_periods=1).mean())
 merged["rolling_std_5"]  = merged.groupby("entity_id")["value"].transform(lambda x: x.rolling(5, min_periods=1).std())
 merged["value_min_5"]    = merged.groupby("entity_id")["value"].transform(lambda x: x.rolling(5, min_periods=1).min())
@@ -65,5 +71,4 @@ db["curated.reference"].drop()
 db["curated.reference"].insert_many(ref.to_dict(orient="records"))
 
 print(" Datos guardados en MongoDB (colecciones curated.*)")
-print("Ejemplo de documento:")
-print(merged.head(1).T)
+print("Pipeline completed successfully.")

@@ -1,9 +1,8 @@
-
 """
 Cleaning Consumer
 -----------------
 Lee de Kafka (3 tópicos), limpia registros y guarda en MongoDB.
-Mongo está publicado en localhost:27018 (puerto mapeado) -> URI: mongodb://localhost:27018
+Mongo está puesto en localhost:27018 = URI: mongodb://localhost:27018
 """
 
 import json
@@ -20,7 +19,7 @@ from pymongo.errors import DuplicateKeyError
 KAFKA_BOOTSTRAP = "localhost:9092"
 TOPICS = ["dirty_events", "dirty_metadata", "dirty_reference"]
 
-# ⚠️ Ajustado a tu puerto expuesto (27018)
+
 MONGO_URI = "mongodb://localhost:27018"
 DB_NAME = "streaming_demo"
 
@@ -32,7 +31,7 @@ def parse_timestamp(x) -> Optional[str]:
         # epoch en ms como string o número
         if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit()):
             ms = int(x)
-            dt = datetime.utcfromtimestamp(ms / 1000.0)
+            dt = datetime.fromtimestamp(ms / 1000.0)
             return dt.isoformat()
         # dateutil maneja ISO, YYYY/mm/dd HH:MM:SS, dd-mm-YYYY HH:MM:SS, etc.
         dt = dtparser.parse(str(x))
@@ -85,11 +84,11 @@ def main():
 
     # índices (dedupe por event_id en cleaned.events)
     clean_events.create_index([("event_id", ASCENDING)], unique=True)
-    # (si quisieras, índices para entity_id en todas)
+    # (si quisiera índices para entity_id en todas)
     for col in [raw_events, raw_meta, raw_ref, clean_events, clean_meta, clean_ref]:
         col.create_index([("entity_id", ASCENDING)])
 
-    print("▶️  Cleaning Consumer escuchando tópicos:", TOPICS)
+    print(" Cleaning Consumer escuchando tópicos:", TOPICS)
     running = True
 
     def handle_sig(sig, frame):
@@ -113,12 +112,12 @@ def main():
             try:
                 payload = json.loads(msg.value().decode("utf-8"))
             except Exception:
-                print(f"⚠️  Mensaje no-JSON en {topic}: {msg.value()[:100]!r}")
+                print(f" Mensaje no-JSON en {topic}: {msg.value()[:100]!r}")
                 continue
 
             # --- Guardado RAW (siempre) ---
             if topic == "dirty_events":
-                raw_events.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.utcnow()})
+                raw_events.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.now()})
                 # Limpieza de events
                 event_id = payload.get("event_id")
                 entity_id = payload.get("entity_id")
@@ -136,11 +135,11 @@ def main():
                 try:
                     clean_events.insert_one(cleaned)
                 except DuplicateKeyError:
-                    # Duplicado por event_id → ignorar
+                    # Duplicado por event_id
                     pass
 
             elif topic == "dirty_metadata":
-                raw_meta.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.utcnow()})
+                raw_meta.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.now()})
                 # Limpieza de metadata
                 cleaned = {
                     "entity_id": payload.get("entity_id"),
@@ -151,7 +150,7 @@ def main():
                 clean_meta.insert_one(cleaned)
 
             elif topic == "dirty_reference":
-                raw_ref.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.utcnow()})
+                raw_ref.insert_one({**payload, "_topic": topic, "_k": key, "_ingested_at": datetime.now()})
                 # Limpieza de reference
                 cleaned = {
                     "entity_id": payload.get("entity_id"),
@@ -169,7 +168,7 @@ def main():
     finally:
         consumer.close()
         mclient.close()
-        print("✅ Consumer cerrado.")
+        print(" Consumer cerrado.")
 
 if __name__ == "__main__":
     main()
